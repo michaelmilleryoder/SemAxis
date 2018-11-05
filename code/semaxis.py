@@ -44,31 +44,65 @@ def main():
     ## Reddit20M embedding (Download: https://drive.google.com/file/d/1ewmS5Uu4tWAkwWsuY8FZVgLr85vvZXye/view?usp=sharing) 
 
     #test_path = "%s/Reddit20M.cbow.300.100.txt" % (EMBEDDING_PATH)
-    test_path = "%s/friends_GoogleNews_300d.txt" % (EMBEDDING_PATH)
-    #test_path = "%s/detroit_GoogleNews_300d.txt" % (EMBEDDING_PATH)
+    test_path = "%s/academia_GoogleNews_300d.txt" % (EMBEDDING_PATH)
     ######################################################################
 
     print("Loading word vectors...")
     test_embed = gensim.models.KeyedVectors.load_word2vec_format(test_path)
+
     print("Projecting words on axes...")
-    
     axes = (
             ('them', 'us'),
             ('fake', 'real'),
             ('wrong', 'right'),
             )
 
-    words = [
-                'gay',
-                'lesbian',
-                'queer',
-                'homosexual',
-                'heterosexual',
-                'transgender',
-                'trans',
-                'cisgender',
-                'cis',
+    # Manual list of words
+#    words = [
+#                'gay',
+#                'lesbian',
+#                'queer',
+#                'homosexual',
+#                'heterosexual',
+#                'transgender',
+#                'trans',
+#                'cisgender',
+#                'cis',
+#            ]
+
+    # List of words from a file
+    rm_list = [
+                'u.s',
+                'nyt',
+                'undated',
+                'cox',
+                'bloomberg',
+                'n.y',
+                'calif',
+                'nytsf',
+                'congressional',
+                'hns',
+                'ladn',
+                'feb',
+                'economist',
+                'fla',
+                'gop',
+                'palestinian',
+                'kosovo',
+                'gingrich',
+                'philadelphia',
+                'warner',
+                'fbn',
+                'nbc',
+                'bosnia',
+                'cbs',
+                'n.j',
+                'lakers',
+                'coxnet',
             ]
+
+    with open('/usr0/home/mamille2/erebor/nyt/nyt_top1000words.txt') as f:
+        words = [w for w in f.read().splitlines() if not w in rm_list]
 
     header = [
                 'embeddings',
@@ -77,8 +111,15 @@ def main():
                 'value',
                 ]
 
+    # Verify that words are in vocabulary
+    for w in words:
+        if not w in test_embed.wv.vocab:
+            print(f"{w} not in vocab")
+
     output = []
-    outname = os.path.splitext(os.path.basename(test_path))[0]
+    #outname = os.path.splitext(os.path.basename(test_path))[0]
+    outname = 'nyt_top1000words'
+
 
     for w in words:
 
