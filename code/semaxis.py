@@ -34,6 +34,68 @@ def main():
 
     EMBEDDING_PATH = "/usr0/home/mamille2/erebor/word_embeddings" ### Your path to embedding directory 
 
+    outnames = [
+                'GoogleNews-vectors-negative300',
+#                'academia' + '_GoogleNews_300d',
+#                'detroit' + '_GoogleNews_300d',
+#                'friends' + '_GoogleNews_300d',
+#                'allmarvel' + '_GoogleNews_300d',
+                ]
+
+    axes = (
+            ('different', 'same'),
+            #('fake', 'real'),
+            ('bad', 'good'),
+            )
+
+    # Manual list of words
+    words = [
+                'transgender',
+                'trans',
+                'queer',
+                'lesbian',
+                'gay',
+                'homosexual',
+                'heterosexual',
+                'cisgender',
+                'cis',
+            ]
+
+    # List of words from a file
+#    rm_list = [
+#                'u.s',
+#                'nyt',
+#                'undated',
+#                'cox',
+#                'bloomberg',
+#                'n.y',
+#                'calif',
+#                'nytsf',
+#                'congressional',
+#                'hns',
+#                'ladn',
+#                'feb',
+#                'economist',
+#                'fla',
+#                'gop',
+#                'palestinian',
+#                'kosovo',
+#                'gingrich',
+#                'philadelphia',
+#                'warner',
+#                'fbn',
+#                'nbc',
+#                'bosnia',
+#                'cbs',
+#                'n.j',
+#                'lakers',
+#                'coxnet',
+#            ]
+#
+#    with open('/usr0/home/mamille2/erebor/nyt/nyt_top1000words.txt') as f:
+#        words = [w for w in f.read().splitlines() if not w in rm_list]
+
+
     ######################################################################
     ### Google News embedding (Download: https://code.google.com/archive/p/word2vec/). Note that for SemAxis, bin file needs to be converted to text file: see https://stackoverflow.com/questions/27324292/convert-word2vec-bin-file-to-text)
     
@@ -43,105 +105,56 @@ def main():
     ######################################################################
     ## Reddit20M embedding (Download: https://drive.google.com/file/d/1ewmS5Uu4tWAkwWsuY8FZVgLr85vvZXye/view?usp=sharing) 
 
-    #test_path = "%s/Reddit20M.cbow.300.100.txt" % (EMBEDDING_PATH)
-    test_path = "%s/academia_GoogleNews_300d.txt" % (EMBEDDING_PATH)
-    ######################################################################
+    for name in outnames:
+        print(name)
 
-    print("Loading word vectors...")
-    test_embed = gensim.models.KeyedVectors.load_word2vec_format(test_path)
+        #test_path = "%s/Reddit20M.cbow.300.100.txt" % (EMBEDDING_PATH)
+        test_path = f"{EMBEDDING_PATH}/{name}.txt"
+        ######################################################################
 
-    print("Projecting words on axes...")
-    axes = (
-            ('them', 'us'),
-            ('fake', 'real'),
-            ('wrong', 'right'),
-            )
+        #outname = os.path.splitext(os.path.basename(test_path))[0]
+        #outname = 'nyt_top1000words'
+        outpath = f'/usr0/home/mamille2/erebor/fanfiction-project/output/semaxis/{name}_semaxis_results.csv'
 
-    # Manual list of words
-#    words = [
-#                'gay',
-#                'lesbian',
-#                'queer',
-#                'homosexual',
-#                'heterosexual',
-#                'transgender',
-#                'trans',
-#                'cisgender',
-#                'cis',
-#            ]
+        print("Loading word vectors...")
+        test_embed = gensim.models.KeyedVectors.load_word2vec_format(test_path)
 
-    # List of words from a file
-    rm_list = [
-                'u.s',
-                'nyt',
-                'undated',
-                'cox',
-                'bloomberg',
-                'n.y',
-                'calif',
-                'nytsf',
-                'congressional',
-                'hns',
-                'ladn',
-                'feb',
-                'economist',
-                'fla',
-                'gop',
-                'palestinian',
-                'kosovo',
-                'gingrich',
-                'philadelphia',
-                'warner',
-                'fbn',
-                'nbc',
-                'bosnia',
-                'cbs',
-                'n.j',
-                'lakers',
-                'coxnet',
-            ]
+        print("Projecting words on axes...")
 
-    with open('/usr0/home/mamille2/erebor/nyt/nyt_top1000words.txt') as f:
-        words = [w for w in f.read().splitlines() if not w in rm_list]
+        header = [
+                    'embeddings',
+                    'term',
+                    'axis',
+                    'value',
+                    ]
 
-    header = [
-                'embeddings',
-                'term',
-                'axis',
-                'value',
-                ]
+        output = []
 
-    # Verify that words are in vocabulary
-    for w in words:
-        if not w in test_embed.wv.vocab:
-            print(f"{w} not in vocab")
+        # Verify that words are in vocabulary
+        for w in words:
+            if w in test_embed.wv.vocab:
+                for axis in axes:
+                    outline = [name, 
+                                w, 
+                                axis, 
+                                project_word_on_axis(test_embed, w, axis, k=0)
+                        ]
+                    output.append(outline)
+            else:
+                print(f"{w} not in vocab. Running without word.")
+                continue
 
-    output = []
-    #outname = os.path.splitext(os.path.basename(test_path))[0]
-    outname = 'nyt_top1000words'
+        
+        ## Test results (with k=3) should be: 
+        ## 0.16963434219360352 with Google News embedding
+        ## 0.31472429633140564 with Reddit20M embedding
 
+        # Save output
+        out_df = pd.DataFrame(output, columns=header)
+        out_df.to_csv(outpath, index=False)
 
-    for w in words:
-
-        # 3-word axes
-        for axis in axes:
-            outline = [outname, 
-                        w, 
-                        axis, 
-                        project_word_on_axis(test_embed, w, axis, k=0)
-                ]
-            output.append(outline)
-    
-    ## Test results (with k=3) should be: 
-    ## 0.16963434219360352 with Google News embedding
-    ## 0.31472429633140564 with Reddit20M embedding
-
-    # Save output
-    out_df = pd.DataFrame(output, columns=header)
-    outpath = f'/usr0/home/mamille2/erebor/fanfiction-project/output/semaxis/{outname}_semaxis_results.csv'
-    out_df.to_csv(outpath, index=False)
-
-    print(f'Results saved to {outpath}')
+        print(f'Results saved to {outpath}')
+        print()
 
 if __name__ == '__main__':
     main()
